@@ -501,7 +501,7 @@
                     <p><strong>Staking Balance:</strong> $<span id="staking-balance">0.00</span></p>
                 </div>
                 <div class="balance-info">
-                    <p><strong>Saving Balance:</strong> $<span id="saving-balance">0.00</span></p>
+                    <p><strong>Daily Earning Balance:</strong> $<span id="Daily Earning-balance">0.00</span></p>
                 </div>
                 <button class="withdraw-btn" onclick="openWithdrawalModal()">Initiate Withdrawal</button>
             </div>
@@ -515,7 +515,7 @@
                         <option value="" disabled selected>Select Withdrawal Type</option>
                         <option value="referral">Referral</option>
                         <option value="staking">Staking</option>
-                        <option value="saving">Saving</option>
+                        <option value="Daily Earning">Daily Earning</option>
                     </select>
                     <input type="number" id="withdrawal-amount" class="w-full p-2 rounded bg-gray-700 text-white border border-gray-600 focus:outline-none focus:border-blue-500 mb-4" placeholder="Amount (USDT)" step="0.01" min="0" required>
                     <input type="text" id="withdrawal-wallet" class="w-full p-2 rounded bg-gray-700 text-white border border-gray-600 focus:outline-none focus:border-blue-500 mb-4" placeholder="Crypto Wallet Address" required>
@@ -667,7 +667,7 @@
 
         function renderActivityChart() {
             const ctx = document.getElementById('activityChart').getContext('2d');
-            const labels = ['Referral', 'Staking', 'Saving'];
+            const labels = ['Referral', 'Staking', 'Daily Earning'];
             const amounts = [
                 viewer.referralData?.income.total || 0,
                 minter.earningsData.totalROICoins * minter.emojiToUSDT || 0,
