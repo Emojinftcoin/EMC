@@ -1,0 +1,1312 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Stackers Dashboard</title>
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700&display=swap" rel="stylesheet">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <style>
+        body {
+            font-family: 'Arial', sans-serif;
+            background: linear-gradient(135deg, #00f7ff, #e100ff);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            padding: 20px;
+            margin: 0;
+            color: #fff;
+        }
+        .card {
+            background: rgba(255, 255, 255, 0.1);
+            padding: 20px;
+            border-radius: 15px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.6);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+        .alert {
+            display: none;
+            background: #ff4444;
+            color: #fff;
+            padding: 10px;
+            border-radius: 8px;
+            margin: 10px 0;
+            font-size: 14px;
+        }
+        .alert.show {
+            display: block;
+        }
+        button {
+            background: linear-gradient(45deg, #00f7ff, #ff00cc);
+            color: white;
+            text-shadow: 0 0 5px rgba(0, 0, 0, 0.5);
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            padding: 12px 24px;
+            font-size: 16px;
+            font-weight: 700;
+            cursor: pointer;
+            border-radius: 8px;
+            margin: 10px 5px;
+            transition: all 0.3s ease;
+        }
+        button:hover {
+            transform: scale(1.1);
+            box-shadow: 0 5px 20px rgba(0, 255, 255, 0.8);
+        }
+        button:disabled {
+            background: #4a5568;
+            text-shadow: none;
+            cursor: not-allowed;
+            transform: none;
+            box-shadow: none;
+        }
+        .withdraw-btn {
+            background: linear-gradient(45deg, #00f7ff, #ff00cc);
+            padding: 10px 20px;
+            font-size: 14px;
+            border: 1px solid rgba(255, 255, 255, 0.3);
+        }
+        .withdraw-btn:hover {
+            transform: scale(1.1);
+            box-shadow: 0 5px 20px rgba(0, 255, 255, 0.8);
+        }
+        .withdraw-btn:disabled {
+            background: #4a5568;
+            text-shadow: none;
+            cursor: not-allowed;
+            transform: none;
+            box-shadow: none;
+        }
+        .balance-info {
+            margin-bottom: 10px;
+            color: #e2e8f0;
+        }
+        .minter-input-group {
+            position: relative;
+            margin: 10px 0;
+        }
+        .minter-input {
+            width: 100%;
+            padding: 12px;
+            border: none;
+            border-radius: 8px;
+            background: rgba(255, 255, 255, 0.15);
+            color: #fff;
+            font-size: 16px;
+            box-sizing: border-box;
+            transition: background 0.3s;
+        }
+        .minter-input:focus {
+            outline: none;
+            background: rgba(255, 255, 255, 0.25);
+        }
+        .minter-input::placeholder {
+            color: rgba(255, 255, 255, 0.6);
+        }
+        .minter-input:invalid:not(:placeholder-shown) {
+            border: 1px solid #ff6666;
+        }
+        .minter-tooltip {
+            position: absolute;
+            top: -30px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: #333;
+            color: #fff;
+            padding: 5px 10px;
+            border-radius: 5px;
+            font-size: 12px;
+            opacity: 0;
+            transition: opacity 0.3s;
+            pointer-events: none;
+        }
+        .minter-input-group:hover .minter-tooltip {
+            opacity: 1;
+        }
+        .minter-button {
+            background: linear-gradient(45deg, #00f7ff, #ff00cc);
+            color: white;
+            text-shadow: 0 0 5px rgba(0, 0, 0, 0.5);
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            padding: 12px 24px;
+            font-size: 16px;
+            font-weight: 700;
+            cursor: pointer;
+            border-radius: 8px;
+            margin: 10px 5px;
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+        }
+        .minter-button:hover {
+            transform: scale(1.1);
+            box-shadow: 0 5px 20px rgba(0, 255, 255, 0.8);
+        }
+        .minter-button:disabled {
+            background: #4a5568;
+            text-shadow: none;
+            cursor: not-allowed;
+            transform: none;
+            box-shadow: none;
+        }
+        .minter-button .spinner {
+            display: none;
+            border: 2px solid #fff;
+            border-top: 2px solid transparent;
+            border-radius: 50%;
+            width: 16px;
+            height: 16px;
+            animation: spin 1s linear infinite;
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+        }
+        .minter-button.loading .spinner {
+            display: inline-block;
+        }
+        .minter-button.loading span {
+            visibility: hidden;
+        }
+        @keyframes spin {
+            0% { transform: translate(-50%, -50%) rotate(0deg); }
+            100% { transform: translate(-50%, -50%) rotate(360deg); }
+        }
+        .minter-copy-btn {
+            background: linear-gradient(45deg, #ffcc00, #ff0066);
+            color: white;
+            text-shadow: 0 0 5px rgba(0, 0, 0, 0.5);
+            padding: 5px 10px;
+            font-size: 12px;
+            margin-left: 10px;
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            border-radius: 8px;
+            transition: all 0.3s ease;
+        }
+        .minter-copy-btn:hover {
+            transform: scale(1.1);
+            box-shadow: 0 5px 20px rgba(255, 204, 0, 0.8);
+        }
+        .minter-output {
+            margin-top: 20px;
+            font-size: 14px;
+            animation: slideIn 0.5s ease-out;
+        }
+        @keyframes slideIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        .minter-timer {
+            font-size: 18px;
+            margin-top: 10px;
+            color: #00ffcc;
+        }
+        .minter-live-earnings {
+            margin-top: 20px;
+            padding: 15px;
+            background: linear-gradient(45deg, #00ffcc, #ff00ff);
+            border-radius: 10px;
+            box-shadow: 0 0 20px rgba(0, 255, 255, 0.8);
+            font-size: 20px;
+            font-weight: 700;
+            text-transform: uppercase;
+            color: #fff;
+            animation: pulse 2s infinite;
+        }
+        @keyframes pulse {
+            0% { transform: scale(1); box-shadow: 0 0 10px rgba(0, 255, 255, 0.5); }
+            50% { transform: scale(1.05); box-shadow: 0 0 20px rgba(0, 255, 255, 0.8); }
+            100% { transform: scale(1); box-shadow: 0 0 10px rgba(0, 255, 255, 0.5); }
+        }
+        .minter-output-row {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 5px 0;
+        }
+        .minter-expired {
+            color: #ff6666;
+            font-weight: bold;
+        }
+        .viewer-container {
+            font-family: 'Orbitron', sans-serif;
+            text-align: center;
+        }
+        .viewer-input {
+            width: 100%;
+            padding: 10px;
+            margin: 10px 0;
+            border: none;
+            border-radius: 8px;
+            background: rgba(255, 255, 255, 0.1);
+            color: #fff;
+            font-size: 16px;
+            box-sizing: border-box;
+        }
+        .viewer-input::placeholder {
+            color: rgba(255, 255, 255, 0.6);
+        }
+        .viewer-button {
+            background: linear-gradient(45deg, #00f7ff, #ff00cc);
+            color: white;
+            text-shadow: 0 0 5px rgba(0, 0, 0, 0.5);
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            padding: 10px 20px;
+            font-size: 16px;
+            font-weight: 700;
+            cursor: pointer;
+            border-radius: 8px;
+            margin: 10px 5px;
+            transition: all 0.3s ease;
+        }
+        .viewer-button:hover {
+            transform: scale(1.1);
+            box-shadow: 0 5px 20px rgba(0, 255, 255, 0.8);
+        }
+        .viewer-output {
+            margin-top: 20px;
+            font-size: 14px;
+            max-height: 400px;
+            overflow-y: auto;
+        }
+        .viewer-tree {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+        .viewer-level {
+            width: 100%;
+            margin: 10px 0;
+        }
+        .viewer-level-header {
+            cursor: pointer;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            margin-bottom: 5px;
+        }
+        .viewer-level-header span {
+            font-size: 16px;
+            color: #00ffcc;
+        }
+        .viewer-toggle-btn {
+            background: none;
+            border: none;
+            color: #00ffcc;
+            font-size: 16px;
+            margin-left: 10px;
+            cursor: pointer;
+        }
+        .viewer-nodes {
+            display: flex;
+            justify-content: center;
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+        .viewer-nodes.level-0 {
+            flex-wrap: nowrap;
+            justify-content: space-around;
+        }
+        .viewer-node {
+            background: rgba(0, 255, 255, 0.1);
+            padding: 10px;
+            border-radius: 8px;
+            margin: 5px;
+            min-width: 200px;
+            text-align: center;
+            border: 1px solid #00ffcc;
+        }
+        .viewer-line {
+            width: 50%;
+            height: 2px;
+            background: #00ffcc;
+            position: relative;
+            margin: 5px auto;
+        }
+        .viewer-line::before, .viewer-line::after {
+            content: '';
+            position: absolute;
+            width: 20px;
+            height: 20px;
+            border-bottom: 2px solid #00ffcc;
+            bottom: -10px;
+        }
+        .viewer-line::before {
+            left: 0;
+            transform: rotate(-45deg);
+        }
+        .viewer-line::after {
+            right: 0;
+            transform: rotate(45deg);
+        }
+        .viewer-note {
+            font-size: 12px;
+            color: #00ffcc;
+            margin-top: 10px;
+        }
+        .viewer-input-note {
+            font-size: 12px;
+            color: #00ffcc;
+            margin-top: -8px;
+            margin-bottom: 10px;
+            text-align: left;
+        }
+        .viewer-output-row {
+            display: block;
+            margin: 2px 0;
+        }
+        .viewer-error {
+            color: #ff6666;
+            font-weight: bold;
+        }
+        .viewer-hidden {
+            display: none;
+        }
+        .viewer-counter {
+            font-size: 24px;
+            font-weight: 700;
+            color: #fff;
+            background: linear-gradient(45deg, #00ffcc, #ff00ff);
+            padding: 10px 20px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+            box-shadow: 0 0 15px rgba(0, 255, 255, 0.7);
+            animation: pulse 2s infinite;
+            text-shadow: 0 0 5px rgba(255, 255, 255, 0.8);
+        }
+        .viewer-status-complete {
+            color: #00ff00;
+            font-weight: bold;
+        }
+        .viewer-status-incomplete {
+            color: #ffcc00;
+            font-weight: bold;
+        }
+        .viewer-income {
+            font-size: 18px;
+            font-weight: 700;
+            color: #fff;
+            background: linear-gradient(45deg, #00ffcc, #ff00ff);
+            padding: 10px 20px;
+            border-radius: 10px;
+            margin-top: 20px;
+            box-shadow: 0 0 15px rgba(0, 255, 255, 0.7);
+            animation: pulse 2s infinite;
+            text-shadow: 0 0 5px rgba(255, 255, 255, 0.8);
+        }
+        .modal {
+            z-index: 1000;
+            transition: opacity 0.3s ease;
+        }
+        .modal.show {
+            display: flex;
+            opacity: 1;
+        }
+        .modal-content {
+            max-height: 90vh;
+            overflow-y: auto;
+        }
+        .modal-content::-webkit-scrollbar {
+            width: 8px;
+        }
+        .modal-content::-webkit-scrollbar-track {
+            background: rgba(255, 255, 255, 0.1);
+        }
+        .modal-content::-webkit-scrollbar-thumb {
+            background: #00f7ff;
+            border-radius: 4px;
+        }
+    </style>
+</head>
+<body>
+    <!-- Login Section -->
+    <div id="login-section" class="flex items-center justify-center min-h-screen">
+        <div class="card w-full max-w-md">
+            <h2 class="text-2xl font-bold text-center mb-6">Login to Stackers Dashboard</h2>
+            <div class="alert" id="errorAlert"></div>
+            <div class="space-y-4">
+                <input id="walletAddress" type="text" placeholder="Wallet Address" class="w-full p-2 rounded bg-gray-700 text-white border border-gray-600 focus:outline-none focus:border-blue-500">
+                <input id="userName" type="text" placeholder="Username" class="w-full p-2 rounded bg-gray-700 text-white border border-gray-600 focus:outline-none focus:border-blue-500">
+                <button onclick="login()">Login</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Dashboard Section -->
+    <div id="dashboard" class="hidden p-6">
+        <header class="mb-8">
+            <h1 class="text-3xl font-bold">Stackers Dashboard</h1>
+            <p class="text-gray-400">Welcome, <span id="display-username"></span></p>
+            <button onclick="logout()" class="mt-4 bg-red-600 hover:bg-red-700 text-white p-2 rounded">Logout</button>
+        </header>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <!-- User Info Card -->
+            <div class="card">
+                <h3 class="text-xl font-semibold mb-4">User Information</h3>
+                <p><strong>Username:</strong> <span id="user-username"></span></p>
+                <p><strong>Wallet Address:</strong> <span id="user-wallet"></span></p>
+                <p><strong>Referral Code:</strong> <span id="user-referral"></span></p>
+                <p><strong>Offer:</strong> <span id="user-offer"></span></p>
+            </div>
+
+            <!-- Emoji Coin Minter Card -->
+            <div class="card">
+                <h3 class="text-xl font-semibold mb-4">Emoji Coin Minter</h3>
+                <div class="minter-input-group">
+                    <input type="text" id="minter-walletAddress" class="minter-input" placeholder="Invoice Number or Email ID" aria-label="Invoice Number or Email ID" required readonly>
+                    <span class="minter-tooltip">Your unique invoice number or email ID</span>
+                </div>
+                <div class="minter-input-group">
+                    <input type="text" id="minter-userName" class="minter-input" placeholder="Your Name" aria-label="Your Name" required readonly>
+                    <span class="minter-tooltip">Your full name</span>
+                </div>
+                <div class="minter-input-group">
+                    <input type="text" id="minter-stakeToken" class="minter-input" placeholder="6-Digit Stake Token or Full Token" pattern="[A-Za-z0-9]{6}|[A-Za-z0-9]+" aria-label="Stake Token" required>
+                    <span class="minter-tooltip">6-digit code (e.g., QTRWDY) or full token</span>
+                </div>
+                <button id="minter-stakeButton" class="minter-button" onclick="minterStartStaking()"><span>Start Staking</span><span class="spinner"></span></button>
+                <button id="minter-downloadPdfBtn" class="minter-button" onclick="minterDownloadEarningsPdf()" style="display:none;" aria-label="Download Earnings PDF">Download PDF</button>
+                <div id="minter-output" class="minter-output" role="region" aria-live="polite"></div>
+                <div id="minter-timer" class="minter-timer" aria-live="polite"></div>
+                <div id="minter-liveEarningsDisplay" class="minter-live-earnings" aria-live="polite">Live Earnings: 0.00 USDT</div>
+            </div>
+
+            <!-- Emoji Coin Referral Viewer Card -->
+            <div class="card">
+                <div class="viewer-container">
+                    <h3 class="text-xl font-semibold mb-4">Referral Viewer</h3>
+                    <div class="viewer-counter" id="viewer-userCounter">Total Users: Loading...</div>
+                    <input type="text" id="viewer-walletAddress" class="viewer-input" placeholder="Wallet Address, Invoice No. or Email ID" readonly>
+                    <input type="text" id="viewer-userName" class="viewer-input" placeholder="Your Name" readonly>
+                    <p class="viewer-input-note">Note: Name without spaces (e.g., JohnDoe)</p>
+                    <input type="text" id="viewer-referralCode" class="viewer-input" placeholder="Your Referral Code" readonly>
+                    <button class="viewer-button" onclick="viewerCheckReferralStatus()">Check Referral Status</button>
+                    <button id="viewer-downloadPdfBtn" class="viewer-button" onclick="viewerDownloadReferralReport()" style="display:none;">Download PDF</button>
+                    <div id="viewer-output" class="viewer-output"></div>
+                </div>
+            </div>
+
+            <!-- Withdraw Request Card -->
+            <div class="card">
+                <h3 class="text-xl font-semibold mb-4">Withdraw Request</h3>
+                <p class="text-gray-300 mb-4">Submit a withdrawal request for your earnings. Ensure staking is initiated in Emoji Coin Minter.</p>
+                <div class="balance-info">
+                    <p><strong>Referral Balance:</strong> $<span id="referral-balance">0.00</span></p>
+                </div>
+                <div class="balance-info">
+                    <p><strong>Staking Balance:</strong> $<span id="staking-balance">0.00</span></p>
+                </div>
+                <div class="balance-info">
+                    <p><strong>Saving Balance:</strong> $<span id="saving-balance">0.00</span></p>
+                </div>
+                <button class="withdraw-btn" onclick="openWithdrawalModal()">Initiate Withdrawal</button>
+            </div>
+
+            <!-- Withdrawal Modal -->
+            <div id="withdrawal-modal" class="modal fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center hidden">
+                <div class="modal-content card w-full max-w-md">
+                    <h2 class="text-xl font-semibold mb-4">Withdrawal Request</h2>
+                    <p id="modal-error" class="text-red-400 mb-4" style="display:none;"></p>
+                    <select id="withdrawal-type" class="w-full p-2 rounded bg-gray-700 text-white border border-gray-600 focus:outline-none focus:border-blue-500 mb-4" required>
+                        <option value="" disabled selected>Select Withdrawal Type</option>
+                        <option value="referral">Referral</option>
+                        <option value="staking">Staking</option>
+                        <option value="saving">Saving</option>
+                    </select>
+                    <input type="number" id="withdrawal-amount" class="w-full p-2 rounded bg-gray-700 text-white border border-gray-600 focus:outline-none focus:border-blue-500 mb-4" placeholder="Amount (USDT)" step="0.01" min="0" required>
+                    <input type="text" id="withdrawal-wallet" class="w-full p-2 rounded bg-gray-700 text-white border border-gray-600 focus:outline-none focus:border-blue-500 mb-4" placeholder="Crypto Wallet Address" required>
+                    <select id="withdrawal-blockchain" class="w-full p-2 rounded bg-gray-700 text-white border border-gray-600 focus:outline-none focus:border-blue-500 mb-4" required>
+                        <option value="" disabled selected>Select Blockchain</option>
+                        <option value="BCS BEP20">BCS BEP20</option>
+                        <option value="ETH ERC20">ETH ERC20</option>
+                        <option value="TRX TRC20">TRX TRC20</option>
+                        <option value="Solana SOL">Solana SOL</option>
+                    </select>
+                    <div id="withdrawal-token" class="bg-gray-800 p-4 rounded border border-cyan-400 mb-4" style="display:none; word-break: break-all;"></div>
+                    <button class="withdraw-btn" onclick="submitWithdrawal()">Submit Request</button>
+                    <button class="withdraw-btn bg-gray-600 hover:bg-gray-700" onclick="closeWithdrawalModal()">Close</button>
+                </div>
+            </div>
+
+            <!-- Activity Chart -->
+            <div class="card">
+                <h3 class="text-xl font-semibold mb-4">Activity Chart</h3>
+                <canvas id="activityChart"></canvas>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let chartInstance = null;
+        let currentUserName = '';
+        let currentWalletAddress = '';
+        let currentUser = null;
+
+        function sanitizeInput(input) {
+            const div = document.createElement('div');
+            div.textContent = input;
+            return div.innerHTML;
+        }
+
+        function showError(message) {
+            const alert = document.getElementById('errorAlert');
+            alert.textContent = message;
+            alert.classList.add('show');
+            setTimeout(() => alert.classList.remove('show'), 5000);
+        }
+
+        async function fetchWithRetry(url, retries = 3, delay = 1000) {
+            for (let i = 1; i <= retries; i++) {
+                try {
+                    console.log(`Attempt ${i} to fetch: ${url}`);
+                    const response = await fetch(url);
+                    console.log(`Fetch response status: ${response.status}`);
+                    if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+                    const text = await response.text();
+                    console.log('Raw JSON response:', text);
+                    const data = JSON.parse(text);
+                    return data;
+                } catch (error) {
+                    console.error(`Fetch attempt ${i} failed:`, error.message);
+                    if (i === retries) {
+                        console.error('All fetch attempts failed.');
+                        showError('Failed to load data. Using mock data.');
+                        return [
+                            {
+                                walletAddress: "XXMTNA234Y6G",
+                                userName: "Ritu",
+                                stakeAmount: 21000,
+                                referralCode: "REF02423",
+                                uplineReferralCode: "REFdc5a"
+                            },
+                            {
+                                walletAddress: "BPDTKEK352GG",
+                                userName: "Gurmeetsingh",
+                                stakeAmount: 21000,
+                                referralCode: "LTAE9O",
+                                uplineReferralCode: "REF02423"
+                            }
+                        ];
+                    }
+                    await new Promise(resolve => setTimeout(resolve, delay * i));
+                }
+            }
+        }
+
+        async function fetchUserData() {
+            const url = 'https://raw.githubusercontent.com/Aptopass/Emoji_Subscriptions.json-main-Emoji_Subscriptions.json/refs/heads/main/Emoji_Subscriptions.json';
+            try {
+                const data = await fetchWithRetry(url);
+                return data.length ? data : [
+                    {
+                        walletAddress: "XXMTNA234Y6G",
+                        userName: "Ritu",
+                        stakeAmount: 21000,
+                        referralCode: "REF02423",
+                        uplineReferralCode: "REFdc5a"
+                    },
+                    {
+                        walletAddress: "BPDTKEK352GG",
+                        userName: "Gurmeetsingh",
+                        stakeAmount: 21000,
+                        referralCode: "LTAE9O",
+                        uplineReferralCode: "REF02423"
+                    }
+                ];
+            } catch (error) {
+                console.error('Error fetching data:', error.message);
+                return [];
+            }
+        }
+
+        async function login() {
+            const walletAddress = sanitizeInput(document.getElementById('walletAddress').value.trim());
+            const userName = sanitizeInput(document.getElementById('userName').value.trim());
+
+            if (!walletAddress || !userName) {
+                showError('Please enter both wallet address and username');
+                return;
+            }
+
+            const users = await fetchUserData();
+            const user = users.find(u => 
+                u.walletAddress.toLowerCase() === walletAddress.toLowerCase() && 
+                u.userName.toLowerCase() === userName.toLowerCase()
+            );
+
+            if (user) {
+                currentUserName = user.userName;
+                currentWalletAddress = user.walletAddress;
+                currentUser = user;
+                document.getElementById('login-section').classList.add('hidden');
+                document.getElementById('dashboard').classList.remove('hidden');
+
+                document.getElementById('display-username').textContent = user.userName;
+                document.getElementById('user-username').textContent = user.userName;
+                document.getElementById('user-wallet').textContent = user.walletAddress;
+                document.getElementById('user-referral').textContent = user.referralCode || 'N/A';
+                document.getElementById('user-offer').textContent = 'Standard Subscription';
+
+                document.getElementById('minter-walletAddress').value = user.walletAddress;
+                document.getElementById('minter-userName').value = user.userName;
+
+                document.getElementById('viewer-walletAddress').value = user.walletAddress;
+                document.getElementById('viewer-userName').value = user.userName;
+                document.getElementById('viewer-referralCode').value = user.referralCode || '';
+
+                viewerFetchData();
+                renderActivityChart();
+            } else {
+                showError('Invalid wallet address or username');
+            }
+        }
+
+        function renderActivityChart() {
+            const ctx = document.getElementById('activityChart').getContext('2d');
+            const labels = ['Referral', 'Staking', 'Saving'];
+            const amounts = [
+                viewer.referralData?.income.total || 0,
+                minter.earningsData.totalROICoins * minter.emojiToUSDT || 0,
+                currentUser?.stakeAmount * minter.emojiToInvestedUSDT || 0
+            ];
+
+            if (chartInstance) {
+                chartInstance.destroy();
+            }
+
+            chartInstance = new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        label: 'Balances ($)',
+                        data: amounts,
+                        backgroundColor: ['#4fd1c5', '#f6ad55', '#ed64a6'],
+                        borderColor: ['#2c7a7b', '#c05621', '#97266d'],
+                        borderWidth: 1
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            title: { display: true, text: 'Amount ($)', color: '#e2e8f0' },
+                            ticks: { color: '#e2e8f0' },
+                            grid: { color: '#4a5568' }
+                        },
+                        x: {
+                            title: { display: true, text: 'Balance Type', color: '#e2e8f0' },
+                            ticks: { color: '#e2e8f0' },
+                            grid: { color: '#4a5568' }
+                        }
+                    },
+                    plugins: {
+                        legend: { labels: { color: '#e2e8f0' } }
+                    }
+                }
+            });
+        }
+
+        function logout() {
+            currentUserName = '';
+            currentWalletAddress = '';
+            currentUser = null;
+            minterClearState();
+            viewerClearState();
+            document.getElementById('login-section').classList.remove('hidden');
+            document.getElementById('dashboard').classList.add('hidden');
+            document.getElementById('walletAddress').value = '';
+            document.getElementById('userName').value = '';
+            if (chartInstance) {
+                chartInstance.destroy();
+                chartInstance = null;
+            }
+        }
+
+        const minter = {
+            secretKey: "xAI-Stake-2025",
+            encoder: new TextEncoder(),
+            decoder: new TextDecoder(),
+            earningsData: {},
+            intervalId: null,
+            emojiToUSDT: 0.01,
+            emojiToInvestedUSDT: 0.00576
+        };
+
+        async function minterFetchConversionRate() {
+            try {
+                return 0.01;
+            } catch (error) {
+                console.error('Fetch rate error:', error.message);
+                showError('Failed to fetch USDT rate. Using default.');
+                return 0.01;
+            }
+        }
+
+        async function minterComputeSHA256(text) {
+            try {
+                const data = minter.encoder.encode(text);
+                const hashBuffer = await crypto.subtle.digest('SHA-256', data);
+                const hashArray = Array.from(new Uint8Array(hashBuffer));
+                return hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+            } catch (error) {
+                console.error('SHA256 error:', error);
+                throw new Error('Hash computation failed');
+            }
+        }
+
+        async function minterDecryptAES(encryptedHex) {
+            try {
+                if (encryptedHex.length % 2 !== 0 || encryptedHex.length < 32) {
+                    throw new Error('Invalid token length');
+                }
+                const encryptedBytes = new Uint8Array(encryptedHex.match(/.{1,2}/g).map(byte => parseInt(byte, 16)));
+                const iv = encryptedBytes.slice(0, 16);
+                const data = encryptedBytes.slice(16);
+                const keyData = minter.encoder.encode(minter.secretKey.padEnd(32, ' '));
+                const key = await crypto.subtle.importKey('raw', keyData, { name: 'AES-CBC' }, false, ['decrypt']);
+                const decrypted = await crypto.subtle.decrypt(
+                    { name: 'AES-CBC', iv: iv },
+                    key,
+                    data
+                );
+                return minter.decoder.decode(decrypted);
+            } catch (error) {
+                console.error('Decryption error:', error.message);
+                throw new Error('Decryption failed');
+            }
+        }
+
+        async function minterFetchOriginalStakeToken(shortToken) {
+            const tokenJsonUrl = 'https://raw.githubusercontent.com/Aptopass/StakerTokens/refs/heads/main/tokens';
+            try {
+                console.log('Fetching token mapping for:', shortToken);
+                const tokenMap = await fetchWithRetry(tokenJsonUrl);
+                const originalToken = tokenMap[shortToken];
+                if (!originalToken) throw new Error(`Short token "${shortToken}" not found`);
+                console.log('Fetched original token:', originalToken);
+                return originalToken;
+            } catch (error) {
+                console.error('Fetch token error:', error.message);
+                throw error;
+            }
+        }
+
+        function minterCopyToClipboard(text) {
+            navigator.clipboard.writeText(text).then(() => {
+                showError('Copied to clipboard!');
+                document.getElementById('errorAlert').style.background = '#00cc00';
+                setTimeout(() => document.getElementById('errorAlert').style.background = '#ff4444', 5000);
+            }).catch(err => {
+                console.error('Failed to copy:', err);
+                showError('Failed to copy. Please copy manually.');
+            });
+        }
+
+        async function minterStartStaking() {
+            const stakeButton = document.getElementById('minter-stakeButton');
+            stakeButton.disabled = true;
+            stakeButton.classList.add('loading');
+
+            const walletAddress = sanitizeInput(document.getElementById('minter-walletAddress').value.trim());
+            const userName = sanitizeInput(document.getElementById('minter-userName').value.trim());
+            const inputStakeToken = sanitizeInput(document.getElementById('minter-stakeToken').value.trim());
+
+            if (!walletAddress || !userName || !inputStakeToken) {
+                showError('Please enter Invoice Number, User Name, and Stake Token!');
+                stakeButton.disabled = false;
+                stakeButton.classList.remove('loading');
+                return;
+            }
+
+            minter.emojiToUSDT = await minterFetchConversionRate();
+
+            let originalStakeToken = inputStakeToken;
+            let shortStakeToken = null;
+
+            const shortTokenRegex = /^[A-Za-z0-9]{6}$/;
+            if (shortTokenRegex.test(inputStakeToken)) {
+                try {
+                    originalStakeToken = await minterFetchOriginalStakeToken(inputStakeToken);
+                    shortStakeToken = inputStakeToken;
+                } catch (error) {
+                    showError(`Invalid Short Stake Token! ${error.message}`);
+                    stakeButton.disabled = false;
+                    stakeButton.classList.remove('loading');
+                    return;
+                }
+            }
+
+            try {
+                const decryptedData = await minterDecryptAES(originalStakeToken);
+                const parts = decryptedData.split(':');
+                if (parts.length < 7 || parts.length > 9) {
+                    throw new Error(`Invalid token format! Expected 7-9 parts, got ${parts.length}`);
+                }
+
+                let tokenWallet, tokenName, amount, timestamp, roiPercentage, startDate, expiryDate, referralCode, uplineReferralCode;
+                let isOldFormat = parts.length <= 8;
+
+                if (isOldFormat) {
+                    [tokenWallet, tokenName, amount, timestamp, roiPercentage, expiryDate, referralCode, uplineReferralCode] = parts;
+                    startDate = timestamp;
+                } else {
+                    [tokenWallet, tokenName, amount, timestamp, roiPercentage, startDate, expiryDate, referralCode, uplineReferralCode] = parts;
+                }
+
+                if (tokenWallet !== walletAddress || tokenName !== userName) {
+                    throw new Error('Invoice Number or User Name does not match the Stake Token!');
+                }
+
+                const start = new Date(`${startDate.slice(0, 10)} ${startDate.slice(11, 13)}:${startDate.slice(13, 15)}:${startDate.slice(15)}`);
+                const expiry = new Date(`${expiryDate.slice(0, 10)} ${expiryDate.slice(11, 13)}:${expiryDate.slice(13, 15)}:${expiryDate.slice(15)}`);
+                const stakedAmount = parseInt(amount);
+                const roiValue = parseFloat(roiPercentage);
+
+                const currentDate = new Date();
+                const roiPerDay = roiValue / 100;
+                const dailyROICoins = stakedAmount * roiPerDay;
+                const roiPerSecondCoins = dailyROICoins / (24 * 60 * 60);
+
+                minter.earningsData = {
+                    walletAddress,
+                    userName,
+                    stakedAmount,
+                    timestamp,
+                    startDate: start.toISOString().slice(0, 19).replace('T', ' '),
+                    expiryDate: expiry.toISOString().slice(0, 19).replace('T', ' '),
+                    roiPercentage: roiValue,
+                    dailyROICoins,
+                    roiPerSecondCoins,
+                    totalROICoins: 0,
+                    referralCode,
+                    uplineReferralCode: uplineReferralCode || 'None',
+                    stakeToken: originalStakeToken,
+                    shortStakeToken: shortStakeToken || null,
+                    isExpired: currentDate > expiry,
+                    isOldFormat
+                };
+
+                const secondsSinceStart = Math.floor((currentDate - start) / 1000);
+                if (secondsSinceStart > 0) {
+                    const secondsUntilExpiry = Math.floor((expiry - start) / 1000);
+                    minter.earningsData.totalROICoins = Math.min(secondsSinceStart, secondsUntilExpiry) * roiPerSecondCoins;
+                }
+
+                minterUpdateOutput();
+                document.getElementById('minter-downloadPdfBtn').style.display = 'inline';
+
+                if (!minter.earningsData.isExpired) {
+                    if (minter.intervalId) clearInterval(minter.intervalId);
+                    minter.intervalId = setInterval(() => {
+                        const now = new Date();
+                        if (now > expiry) {
+                            clearInterval(minter.intervalId);
+                            minter.earningsData.isExpired = true;
+                            minterUpdateOutput();
+                            return;
+                        }
+                        minter.earningsData.totalROICoins += minter.earningsData.roiPerSecondCoins;
+                        minterUpdateOutput();
+                    }, 1000);
+                }
+            } catch (error) {
+                showError(`Invalid Stake Token! ${error.message}`);
+                console.error('Detailed Error:', error.message);
+            } finally {
+                stakeButton.disabled = false;
+                stakeButton.classList.remove('loading');
+            }
+        }
+
+        function minterUpdateOutput() {
+            const { walletAddress, userName, stakedAmount, timestamp, startDate, expiryDate, roiPercentage, dailyROICoins, totalROICoins, referralCode, uplineReferralCode, stakeToken, shortStakeToken, isExpired, isOldFormat } = minter.earningsData;
+            const secondsSinceStart = Math.floor((new Date() - new Date(startDate)) / 1000);
+            const daysStaked = Math.max(0, Math.floor(secondsSinceStart / (24 * 60 * 60)));
+            const output = document.getElementById('minter-output');
+            const displayToken = shortStakeToken || stakeToken.slice(0, 20) + '...';
+            const usdtEarnings = totalROICoins * minter.emojiToUSDT;
+            const investedAmountUSDT = stakedAmount * minter.emojiToInvestedUSDT;
+
+            if (isExpired) {
+                output.innerHTML = `
+                    <p class="minter-expired"><strong>Stake Token Expired!</strong> Expiry Date: ${expiryDate}</p>
+                    <p><strong>Invoice Number:</strong> ${walletAddress}</p>
+                    <p><strong>User Name:</strong> ${userName}</p>
+                    <p><strong>Staked Amount:</strong> ${stakedAmount} Emoji Coins</p>
+                    <p><strong>Invested Amount:</strong> ${investedAmountUSDT.toFixed(2)} USDT</p>
+                    <p><strong>Stake Timestamp:</strong> ${timestamp}</p>
+                    ${!isOldFormat ? `<p><strong>Start Date:</strong> ${startDate}</p>` : ''}
+                    <p><strong>Days Staked:</strong> ${daysStaked}</p>
+                    <p><strong>Daily ROI (${roiPercentage}%):</strong> ${dailyROICoins.toFixed(2)} Emoji Coins</p>
+                    <div class="minter-output-row">
+                        <p><strong>Total Earnings:</strong> ${totalROICoins.toFixed(2)} Emoji Coins</p>
+                        <button class="minter-copy-btn" onclick="minterCopyToClipboard('${totalROICoins.toFixed(2)}')" aria-label="Copy Total Earnings">Copy</button>
+                    </div>
+                    <div class="minter-output-row">
+                        <p><strong>Referral Code:</strong> ${referralCode}</p>
+                        <button class="minter-copy-btn" onclick="minterCopyToClipboard('${referralCode}')" aria-label="Copy Referral Code">Copy</button>
+                    </div>
+                    <p><strong>Upline Referral Code:</strong> ${uplineReferralCode}</p>
+                    <div class="minter-output-row">
+                        <p><strong>Stake Token:</strong> ${displayToken}</p>
+                        <button class="minter-copy-btn" onclick="minterCopyToClipboard('${shortStakeToken || stakeToken}')" aria-label="Copy Stake Token">Copy</button>
+                    </div>
+                `;
+                document.getElementById('minter-timer').innerHTML = 'Staking Period Ended';
+                document.getElementById('minter-liveEarningsDisplay').innerHTML = `Total Earnings: ${usdtEarnings.toFixed(2)} USDT`;
+            } else {
+                output.innerHTML = `
+                    <p><strong>Invoice Number:</strong> ${walletAddress}</p>
+                    <p><strong>User Name:</strong> ${userName}</p>
+                    <p><strong>Staked Amount:</strong> ${stakedAmount} Emoji Coins</p>
+                    <p><strong>Invested Amount:</strong> ${investedAmountUSDT.toFixed(2)} USDT</p>
+                    <p><strong>Stake Timestamp:</strong> ${timestamp}</p>
+                    ${!isOldFormat ? `<p><strong>Start Date:</strong> ${startDate}</p>` : ''}
+                    <p><strong>Expiry Date:</strong> ${expiryDate}</p>
+                    <p><strong>Days Staked:</strong> ${daysStaked}</p>
+                    <p><strong>Daily ROI (${roiPercentage}%):</strong> ${dailyROICoins.toFixed(2)} Emoji Coins</p>
+                    <div class="minter-output-row">
+                        <p><strong>Total Earnings:</strong> ${totalROICoins.toFixed(2)} Emoji Coins</p>
+                        <button class="minter-copy-btn" onclick="minterCopyToClipboard('${totalROICoins.toFixed(2)}')" aria-label="Copy Total Earnings">Copy</button>
+                    </div>
+                    <div class="minter-output-row">
+                        <p><strong>Referral Code:</strong> ${referralCode}</p>
+                        <button class="minter-copy-btn" onclick="minterCopyToClipboard('${referralCode}')" aria-label="Copy Referral Code">Copy</button>
+                    </div>
+                    <p><strong>Upline Referral Code:</strong> ${uplineReferralCode}</p>
+                    <div class="minter-output-row">
+                        <p><strong>Stake Token:</strong> ${displayToken}</p>
+                        <button class="minter-copy-btn" onclick="minterCopyToClipboard('${shortStakeToken || stakeToken}')" aria-label="Copy Stake Token">Copy</button>
+                    </div>
+                `;
+                document.getElementById('minter-timer').innerHTML = `Live Earnings: ${totalROICoins.toFixed(2)} Emoji Coins`;
+                document.getElementById('minter-liveEarningsDisplay').innerHTML = `Live Earnings: ${usdtEarnings.toFixed(2)} USDT`;
+            }
+
+            document.getElementById('staking-balance').textContent = usdtEarnings.toFixed(2);
+            renderActivityChart();
+        }
+
+        async function minterDownloadEarningsPdf() {
+            if (!Object.keys(minter.earningsData).length) {
+                showError('No staking data available to download!');
+                return;
+            }
+
+            const { jsPDF } = window.jspdf;
+            const doc = new jsPDF();
+            const { walletAddress, userName, stakedAmount, timestamp, startDate, expiryDate, roiPercentage, dailyROICoins, totalROICoins, referralCode, uplineReferralCode, stakeToken, shortStakeToken, isExpired, isOldFormat } = minter.earningsData;
+            const usdtEarnings = totalROICoins * minter.emojiToUSDT;
+            const investedAmountUSDT = stakedAmount * minter.emojiToInvestedUSDT;
+
+            doc.setFont('Arial', 'normal');
+            doc.setFillColor(0, 204, 255);
+            doc.rect(0, 0, 210, 20, 'F');
+            doc.setTextColor(255, 255, 255);
+            doc.setFontSize(16);
+            doc.text('Emoji Coin Staker Earnings Report', 105, 12, { align: 'center' });
+
+            doc.setTextColor(0, 0, 0);
+            doc.setFontSize(12);
+            let y = 30;
+            if (isExpired) {
+                doc.setTextColor(255, 102, 102);
+                doc.text('Stake Token Expired', 10, y);
+                doc.setTextColor(0, 0, 0);
+                y += 10;
+            }
+            doc.text(`Invoice Number: ${walletAddress}`, 10, y); y += 10;
+            doc.text(`User Name: ${userName}`, 10, y); y += 10;
+            doc.text(`Staked Amount: ${stakedAmount} Emoji Coins`, 10, y); y += 10;
+            doc.text(`Invested Amount: ${investedAmountUSDT.toFixed(2)} USDT`, 10, y); y += 10;
+            doc.text(`Stake Timestamp: ${timestamp}`, 10, y); y += 10;
+            if (!isOldFormat) {
+                doc.text(`Start Date: ${startDate}`, 10, y); y += 10;
+            }
+            doc.text(`Expiry Date: ${expiryDate}`, 10, y); y += 10;
+            doc.text(`Days Staked: ${Math.max(0, Math.floor((new Date() - new Date(startDate)) / (24 * 60 * 60 * 1000)))}`, 10, y); y += 10;
+            doc.text(`Daily ROI (${roiPercentage}%): ${dailyROICoins.toFixed(2)} Emoji Coins`, 10, y); y += 10;
+            doc.text(`Total Earnings: ${totalROICoins.toFixed(2)} Emoji Coins`, 10, y); y += 10;
+            doc.text(`Total Earnings (USDT): ${usdtEarnings.toFixed(2)} USDT`, 10, y); y += 10;
+            doc.text(`Referral Code: ${referralCode}`, 10, y); y += 10;
+            doc.text(`Upline Referral Code: ${uplineReferralCode}`, 10, y); y += 10;
+            doc.text(`Stake Token: ${shortStakeToken || stakeToken.slice(0, 20) + '...'}`, 10, y);
+
+            doc.save(`Staking_Earnings_${userName}_${new Date().toISOString().slice(0, 10)}.pdf`);
+        }
+
+        function minterClearState() {
+            if (minter.intervalId) clearInterval(minter.intervalId);
+            minter.earningsData = {};
+            minter.intervalId = null;
+            document.getElementById('minter-output').innerHTML = '';
+            document.getElementById('minter-timer').innerHTML = '';
+            document.getElementById('minter-liveEarningsDisplay').innerHTML = 'Live Earnings: 0.00 USDT';
+            document.getElementById('minter-stakeToken').value = '';
+            document.getElementById('minter-downloadPdfBtn').style.display = 'none';
+            document.getElementById('staking-balance').textContent = '0.00';
+        }
+
+        const viewer = {
+            referralData: null,
+            maxDirectReferrals: 5,
+            referralPercentages: [0.10, 0.05, 0.03, 0.02, 0.01, 0.008, 0.006, 0.005, 0.004, 0.003, 0.002]
+        };
+
+        async function viewerFetchData() {
+            const users = await fetchUserData();
+            document.getElementById('viewer-userCounter').textContent = `Total Users: ${users.length}`;
+        }
+
+        function viewerClearState() {
+            viewer.referralData = null;
+            document.getElementById('viewer-output').innerHTML = '';
+            document.getElementById('viewer-downloadPdfBtn').style.display = 'none';
+            document.getElementById('referral-balance').textContent = '0.00';
+        }
+
+        async function viewerCheckReferralStatus() {
+            const walletAddress = sanitizeInput(document.getElementById('viewer-walletAddress').value.trim());
+            const userName = sanitizeInput(document.getElementById('viewer-userName').value.trim());
+            const referralCode = sanitizeInput(document.getElementById('viewer-referralCode').value.trim());
+
+            if (!walletAddress || !userName || !referralCode) {
+                showError('Please ensure all fields are filled!');
+                return;
+            }
+
+            const users = await fetchUserData();
+            const user = users.find(u => 
+                u.walletAddress.toLowerCase() === walletAddress.toLowerCase() && 
+                u.userName.toLowerCase() === userName.toLowerCase() && 
+                u.referralCode.toLowerCase() === referralCode.toLowerCase()
+            );
+
+            if (!user) {
+                showError('User not found or invalid referral code!');
+                return;
+            }
+
+            const referralTree = [];
+            const income = { levels: [], total: 0 };
+            let currentLevelUsers = users.filter(u => u.uplineReferralCode === referralCode);
+            let level = 0;
+
+            while (currentLevelUsers.length > 0 && level < viewer.referralPercentages.length) {
+                const levelData = {
+                    users: [],
+                    count: currentLevelUsers.length,
+                    percentage: level === 0 ? viewer.referralPercentages[0] : viewer.referralPercentages[level],
+                    totalInvestment: 0,
+                    totalIncome: 0
+                };
+
+                currentLevelUsers.forEach(u => {
+                    const investment = (u.stakeAmount || 0) * minter.emojiToInvestedUSDT;
+                    const incomeFromUser = investment * levelData.percentage;
+                    levelData.users.push({
+                        walletAddress: u.walletAddress,
+                        userName: u.userName,
+                        referralCode: u.referralCode,
+                        investment: investment,
+                        income: incomeFromUser
+                    });
+                    levelData.totalInvestment += investment;
+                    levelData.totalIncome += incomeFromUser;
+                });
+
+                income.levels.push(levelData);
+                income.total += levelData.totalIncome;
+                referralTree.push(levelData.users);
+
+                const nextLevelCodes = currentLevelUsers.map(u => u.referralCode);
+                currentLevelUsers = users.filter(u => nextLevelCodes.includes(u.uplineReferralCode));
+                level++;
+            }
+
+            viewer.referralData = {
+                walletAddress,
+                userName,
+                referralCode,
+                tree: referralTree,
+                income,
+                directReferralCount: referralTree[0]?.length || 0,
+                isComplete: (referralTree[0]?.length || 0) >= viewer.maxDirectReferrals
+            };
+
+            viewerRenderReferralTree();
+            document.getElementById('referral-balance').textContent = viewer.referralData.income.total.toFixed(2);
+            document.getElementById('viewer-downloadPdfBtn').style.display = 'inline';
+            renderActivityChart();
+        }
+
+        function viewerRenderReferralTree() {
+            const output = document.getElementById('viewer-output');
+            output.innerHTML = '';
+
+            if (!viewer.referralData) {
+                output.innerHTML = '<p class="viewer-error">No referral data available.</p>';
+                return;
+            }
+
+            const { tree, income, directReferralCount, isComplete } = viewer.referralData;
+            output.innerHTML += `
+                <p><strong>Status:</strong> <span class="${isComplete ? 'viewer-status-complete' : 'viewer-status-incomplete'}">${isComplete ? 'Complete' : 'Incomplete'}</span></p>
+                <p><strong>Direct Referrals:</strong> ${directReferralCount} / ${viewer.maxDirectReferrals}</p>
+                <div class="viewer-income">Total Referral Income: $${income.total.toFixed(2)}</div>
+            `;
+
+            const treeContainer = document.createElement('div');
+            treeContainer.className = 'viewer-tree';
+
+            tree.forEach((levelUsers, level) => {
+                const levelDiv = document.createElement('div');
+                levelDiv.className = 'viewer-level';
+                const levelHeader = document.createElement('div');
+                levelHeader.className = 'viewer-level-header';
+                levelHeader.innerHTML = `<span>Level ${level + 1} (${levelUsers.length} Users, ${income.levels[level].percentage * 100}%)</span>`;
+                const toggleBtn = document.createElement('button');
+                toggleBtn.className = 'viewer-toggle-btn';
+                toggleBtn.innerHTML = '▼';
+                toggleBtn.onclick = () => viewerToggleLevel(level);
+                levelHeader.appendChild(toggleBtn);
+                levelDiv.appendChild(levelHeader);
+
+                const nodesDiv = document.createElement('div');
+                nodesDiv.className = `viewer-nodes ${level === 0 ? 'level-0' : ''}`;
+                nodesDiv.id = `viewer-level-${level}`;
+                levelUsers.forEach(user => {
+                    const node = document.createElement('div');
+                    node.className = 'viewer-node';
+                    node.innerHTML = `
+                        <p><strong>${user.userName}</strong></p>
+                        <p>Wallet: ${user.walletAddress.slice(0, 6)}...</p>
+                        <p>Investment: $${user.investment.toFixed(2)}</p>
+                        <p>Income: $${user.income.toFixed(2)}</p>
+                    `;
+                    nodesDiv.appendChild(node);
+                });
+
+                levelDiv.appendChild(document.createElement('div')).className = 'viewer-line';
+                levelDiv.appendChild(nodesDiv);
+                treeContainer.appendChild(levelDiv);
+            });
+
+            output.appendChild(treeContainer);
+            output.innerHTML += '<p class="viewer-note">Note: Referral income is based on downline investments.</p>';
+        }
+
+        function viewerToggleLevel(level) {
+            const nodesDiv = document.getElementById(`viewer-level-${level}`);
+            const toggleBtn = nodesDiv.previousElementSibling.previousElementSibling.querySelector('.viewer-toggle-btn');
+            if (nodesDiv.classList.contains('viewer-hidden')) {
+                nodesDiv.classList.remove('viewer-hidden');
+                toggleBtn.innerHTML = '▼';
+            } else {
+                nodesDiv.classList.add('viewer-hidden');
+                toggleBtn.innerHTML = '▶';
+            }
+        }
+
+        async function viewerDownloadReferralReport() {
+            if (!viewer.referralData) {
+                showError('No referral data available to download!');
+                return;
+            }
+
+            const { jsPDF } = window.jspdf;
+            const doc = new jsPDF();
+            const { walletAddress, userName, referralCode, tree, income, directReferralCount, isComplete } = viewer.referralData;
+
+            doc.setFont('Arial', 'normal');
+            doc.setFillColor(0, 204, 255);
+            doc.rect(0, 0, 210, 20, 'F');
+            doc.setTextColor(255, 255, 255);
+            doc.setFontSize(16);
+            doc.text('Referral Status Report', 105, 12, { align: 'center' });
+
+            doc.setTextColor(0, 0, 0);
+            doc.setFontSize(12);
+            let y = 30;
+            doc.text(`Invoice Number: ${walletAddress}`, 10, y); y += 10;
+            doc.text(`User Name: ${userName}`, 10, y); y += 10;
+            doc.text(`Referral Code: ${referralCode}`, 10, y); y += 10;
+            doc.text(`Status: ${isComplete ? 'Complete' : 'Incomplete'}`, 10, y); y += 10;
+            doc.text(`Direct Referrals: ${directReferralCount} / ${viewer.maxDirectReferrals}`, 10, y); y += 10;
+            doc.text(`Total Referral Income: $${income.total.toFixed(2)}`, 10, y); y += 10;
+
+            tree.forEach((levelUsers, level) => {
+                y += 10;
+                doc.text(`Level ${level + 1} (${levelUsers.length} Users, ${income.levels[level].percentage * 100}%):`, 10, y); y += 10;
+                doc.text(`Total Investment: $${income.levels[level].totalInvestment.toFixed(2)}`, 10, y); y += 10;
+                doc.text(`Total Income: $${income.levels[level].totalIncome.toFixed(2)}`, 10, y); y += 10;
+                levelUsers.forEach(user => {
+                    doc.text(`- ${user.userName} (${user.walletAddress.slice(0, 6)}...): $${user.income.toFixed(2)}`, 15, y); y += 10;
+                });
+                if (y > 270) {
+                    doc.addPage();
+                    y = 20;
+                }
+            });
+
+            doc.save(`Referral_Report_${userName}_${new Date().toISOString().slice(0, 10)}.pdf`);
+        }
+
+        function openWithdrawalModal() {
+            document.getElementById('withdrawal-modal').classList.remove('hidden');
+            document.getElementById('withdrawal-modal').classList.add('show');
+        }
+
+        function closeWithdrawalModal() {
+            document.getElementById('withdrawal-modal').classList.remove('show');
+            document.getElementById('withdrawal-modal').classList.add('hidden');
+            document.getElementById('modal-error').style.display = 'none';
+            document.getElementById('withdrawal-type').value = '';
+            document.getElementById('withdrawal-amount').value = '';
+            document.getElementById('withdrawal-wallet').value = '';
+            document.getElementById('withdrawal-blockchain').value = '';
+            document.getElementById('withdrawal-token').style.display = 'none';
+        }
+
+        async function submitWithdrawal() {
+            const type = document.getElementById('withdrawal-type').value;
+            const amount = parseFloat(document.getElementById('withdrawal-amount').value);
+            const wallet = sanitizeInput(document.getElementById('withdrawal-wallet').value.trim());
+            const blockchain = document.getElementById('withdrawal-blockchain').value;
+
+            if (!type || !amount || !wallet || !blockchain) {
+                document.getElementById('modal-error').textContent = 'Please fill all fields!';
+                document.getElementById('modal-error').style.display = 'block';
+                return;
+            }
+
+            let balance;
+            if (type === 'referral') {
+                balance = viewer.referralData?.income.total || 0;
+            } else if (type === 'staking') {
+                balance = minter.earningsData.totalROICoins * minter.emojiToUSDT || 0;
+            } else {
+                balance = currentUser?.stakeAmount * minter.emojiToInvestedUSDT || 0;
+            }
+
+            if (amount > balance) {
+                document.getElementById('modal-error').textContent = `Insufficient ${type} balance! Available: $${balance.toFixed(2)}`;
+                document.getElementById('modal-error').style.display = 'block';
+                return;
+            }
+
+            const token = await minterComputeSHA256(`${currentUserName}:${wallet}:${amount}:${blockchain}:${new Date().toISOString()}`);
+            document.getElementById('withdrawal-token').textContent = `Withdrawal Token: ${token}`;
+            document.getElementById('withdrawal-token').style.display = 'block';
+
+            showError('Withdrawal request submitted! Please save the withdrawal token.');
+        }
+    </script>
+</body>
+</html>
