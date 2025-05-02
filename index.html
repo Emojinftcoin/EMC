@@ -450,6 +450,7 @@
                 <p><strong>Username:</strong> <span id="user-username"></span></p>
                 <p><strong>Wallet Address:</strong> <span id="user-wallet"></span></p>
                 <p><strong>Referral Code:</strong> <span id="user-referral"></span></p>
+                <p><strong>Stake Token:</strong> <span id="user-stake-token"></span></p>
                 <p><strong>Offer:</strong> <span id="user-offer"></span></p>
             </div>
 
@@ -501,7 +502,7 @@
                     <p><strong>Staking Balance:</strong> $<span id="staking-balance">0.00</span></p>
                 </div>
                 <div class="balance-info">
-                    <p><strong>Daily Earning Balance:</strong> $<span id="Daily Earning-balance">0.00</span></p>
+                    <p><strong>Daily Earning Balance:</strong> $<span id="daily-earning-balance">0.00</span></p>
                 </div>
                 <button class="withdraw-btn" onclick="openWithdrawalModal()">Initiate Withdrawal</button>
             </div>
@@ -515,7 +516,7 @@
                         <option value="" disabled selected>Select Withdrawal Type</option>
                         <option value="referral">Referral</option>
                         <option value="staking">Staking</option>
-                        <option value="Daily Earning">Daily Earning</option>
+                        <option value="daily-earning">Daily Earning</option>
                     </select>
                     <input type="number" id="withdrawal-amount" class="w-full p-2 rounded bg-gray-700 text-white border border-gray-600 focus:outline-none focus:border-blue-500 mb-4" placeholder="Amount (USDT)" step="0.01" min="0" required>
                     <input type="text" id="withdrawal-wallet" class="w-full p-2 rounded bg-gray-700 text-white border border-gray-600 focus:outline-none focus:border-blue-500 mb-4" placeholder="Crypto Wallet Address" required>
@@ -545,6 +546,7 @@
         let currentUserName = '';
         let currentWalletAddress = '';
         let currentUser = null;
+        let dailyEarningInterval = null;
 
         function sanitizeInput(input) {
             const div = document.createElement('div');
@@ -579,16 +581,50 @@
                             {
                                 walletAddress: "XXMTNA234Y6G",
                                 userName: "Ritu",
-                                stakeAmount: 21000,
+                                stakeAmount: 41666.67, // 240 USDT / 0.00576
+                                stakeToken: "QTRWDY",
                                 referralCode: "REF02423",
                                 uplineReferralCode: "REFdc5a"
                             },
                             {
                                 walletAddress: "BPDTKEK352GG",
                                 userName: "Gurmeetsingh",
-                                stakeAmount: 21000,
+                                stakeAmount: 20833.33, // 120 USDT / 0.00576
+                                stakeToken: "ABC123",
                                 referralCode: "LTAE9O",
-                                uplineReferralCode: "REF02423
+                                uplineReferralCode: "REF02423"
+                            },
+                            {
+                                walletAddress: "USER1WALLET",
+                                userName: "User1",
+                                stakeAmount: 20833.33,
+                                stakeToken: "XYZ789",
+                                referralCode: "USER1REF",
+                                uplineReferralCode: "REF02423"
+                            },
+                            {
+                                walletAddress: "USER2WALLET",
+                                userName: "User2",
+                                stakeAmount: 20833.33,
+                                stakeToken: "DEF456",
+                                referralCode: "USER2REF",
+                                uplineReferralCode: "REF02423"
+                            },
+                            {
+                                walletAddress: "USER3WALLET",
+                                userName: "User3",
+                                stakeAmount: 20833.33,
+                                stakeToken: "GHI789",
+                                referralCode: "USER3REF",
+                                uplineReferralCode: "REF02423"
+                            },
+                            {
+                                walletAddress: "USER4WALLET",
+                                userName: "User4",
+                                stakeAmount: 20833.33,
+                                stakeToken: "JKL012",
+                                referralCode: "USER4REF",
+                                uplineReferralCode: "REF02423"
                             }
                         ];
                     }
@@ -605,15 +641,49 @@
                     {
                         walletAddress: "XXMTNA234Y6G",
                         userName: "Ritu",
-                        stakeAmount: 21000,
+                        stakeAmount: 41666.67,
+                        stakeToken: "QTRWDY",
                         referralCode: "REF02423",
                         uplineReferralCode: "REFdc5a"
                     },
                     {
                         walletAddress: "BPDTKEK352GG",
                         userName: "Gurmeetsingh",
-                        stakeAmount: 21000,
+                        stakeAmount: 20833.33,
+                        stakeToken: "ABC123",
                         referralCode: "LTAE9O",
+                        uplineReferralCode: "REF02423"
+                    },
+                    {
+                        walletAddress: "USER1WALLET",
+                        userName: "User1",
+                        stakeAmount: 20833.33,
+                        stakeToken: "XYZ789",
+                        referralCode: "USER1REF",
+                        uplineReferralCode: "REF02423"
+                    },
+                    {
+                        walletAddress: "USER2WALLET",
+                        userName: "User2",
+                        stakeAmount: 20833.33,
+                        stakeToken: "DEF456",
+                        referralCode: "USER2REF",
+                        uplineReferralCode: "REF02423"
+                    },
+                    {
+                        walletAddress: "USER3WALLET",
+                        userName: "User3",
+                        stakeAmount: 20833.33,
+                        stakeToken: "GHI789",
+                        referralCode: "USER3REF",
+                        uplineReferralCode: "REF02423"
+                    },
+                    {
+                        walletAddress: "USER4WALLET",
+                        userName: "User4",
+                        stakeAmount: 20833.33,
+                        stakeToken: "JKL012",
+                        referralCode: "USER4REF",
                         uplineReferralCode: "REF02423"
                     }
                 ];
@@ -649,10 +719,12 @@
                 document.getElementById('user-username').textContent = user.userName;
                 document.getElementById('user-wallet').textContent = user.walletAddress;
                 document.getElementById('user-referral').textContent = user.referralCode || 'N/A';
-                document.getElementById('user-offer').textContent = 'Standard Subscription';
+                document.getElementById('user-stake-token').textContent = user.stakeToken || 'N/A';
+                document.getElementById('user-offer').textContent = 'arda';
 
                 document.getElementById('minter-walletAddress').value = user.walletAddress;
                 document.getElementById('minter-userName').value = user.userName;
+                document.getElementById('minter-stakeToken').value = user.stakeToken || '';
 
                 document.getElementById('viewer-walletAddress').value = user.walletAddress;
                 document.getElementById('viewer-userName').value = user.userName;
@@ -671,7 +743,7 @@
             const amounts = [
                 viewer.referralData?.income.total || 0,
                 minter.earningsData.totalROICoins * minter.emojiToUSDT || 0,
-                currentUser?.stakeAmount * minter.emojiToInvestedUSDT || 0
+                viewer.dailyEarningData?.totalDailyEarning || 0
             ];
 
             if (chartInstance) {
@@ -718,6 +790,7 @@
             currentUser = null;
             minterClearState();
             viewerClearState();
+            if (dailyEarningInterval) clearInterval(dailyEarningInterval);
             document.getElementById('login-section').classList.remove('hidden');
             document.getElementById('dashboard').classList.add('hidden');
             document.getElementById('walletAddress').value = '';
@@ -889,7 +962,8 @@
                     stakeToken: originalStakeToken,
                     shortStakeToken: shortStakeToken || null,
                     isExpired: currentDate > expiry,
-                    isOldFormat
+                    isOldFormat,
+                    startDateObj: start
                 };
 
                 const secondsSinceStart = Math.floor((currentDate - start) / 1000);
@@ -915,6 +989,9 @@
                         minterUpdateOutput();
                     }, 1000);
                 }
+
+                // Trigger daily earning calculation after staking starts
+                viewerCalculateDailyEarning();
             } catch (error) {
                 showError(`Invalid Stake Token! ${error.message}`);
                 console.error('Detailed Error:', error.message);
@@ -1048,13 +1125,14 @@
             document.getElementById('minter-output').innerHTML = '';
             document.getElementById('minter-timer').innerHTML = '';
             document.getElementById('minter-liveEarningsDisplay').innerHTML = 'Live Earnings: 0.00 USDT';
-            document.getElementById('minter-stakeToken').value = '';
+            document.getElementById('minter-stakeToken').value = currentUser?.stakeToken || '';
             document.getElementById('minter-downloadPdfBtn').style.display = 'none';
             document.getElementById('staking-balance').textContent = '0.00';
         }
 
         const viewer = {
             referralData: null,
+            dailyEarningData: { totalDailyEarning: 0, lastUpdate: null, startDate: null },
             maxDirectReferrals: 5,
             referralPercentages: [0.10, 0.05, 0.03, 0.02, 0.01, 0.008, 0.006, 0.005, 0.004, 0.003, 0.002]
         };
@@ -1066,9 +1144,62 @@
 
         function viewerClearState() {
             viewer.referralData = null;
+            viewer.dailyEarningData = { totalDailyEarning: 0, lastUpdate: null, startDate: null };
             document.getElementById('viewer-output').innerHTML = '';
             document.getElementById('viewer-downloadPdfBtn').style.display = 'none';
             document.getElementById('referral-balance').textContent = '0.00';
+            document.getElementById('daily-earning-balance').textContent = '0.00';
+            if (dailyEarningInterval) clearInterval(dailyEarningInterval);
+        }
+
+        async function viewerCalculateDailyEarning() {
+            if (!viewer.referralData || !viewer.referralData.isComplete || !minter.earningsData.startDateObj) {
+                viewer.dailyEarningData = { totalDailyEarning: 0, lastUpdate: null, startDate: null };
+                document.getElementById('daily-earning-balance').textContent = '0.00';
+                if (dailyEarningInterval) clearInterval(dailyEarningInterval);
+                renderActivityChart();
+                return;
+            }
+
+            const directReferrals = viewer.referralData.tree[0] || [];
+            const referralInvestments = directReferrals.reduce((sum, user) => sum + user.investment, 0);
+            const userInvestment = currentUser.stakeAmount * minter.emojiToInvestedUSDT;
+            const totalInvestment = referralInvestments + userInvestment;
+            const monthlyIncome = totalInvestment / 24;
+            const dailyIncome = monthlyIncome / 30;
+
+            const startDate = minter.earningsData.startDateObj;
+            const now = new Date();
+            const millisecondsSinceStart = Math.max(0, now - startDate);
+            const daysSinceStart = millisecondsSinceStart / (1000 * 60 * 60 * 24);
+
+            viewer.dailyEarningData = {
+                totalDailyEarning: dailyIncome * daysSinceStart,
+                lastUpdate: now,
+                startDate: startDate
+            };
+
+            document.getElementById('daily-earning-balance').textContent = viewer.dailyEarningData.totalDailyEarning.toFixed(2);
+
+            if (dailyEarningInterval) clearInterval(dailyEarningInterval);
+            dailyEarningInterval = setInterval(() => {
+                if (!viewer.referralData || !viewer.referralData.isComplete || !minter.earningsData.startDateObj) {
+                    viewer.dailyEarningData.totalDailyEarning = 0;
+                    viewer.dailyEarningData.startDate = null;
+                    document.getElementById('daily-earning-balance').textContent = '0.00';
+                    clearInterval(dailyEarningInterval);
+                    renderActivityChart();
+                    return;
+                }
+                const now = new Date();
+                const millisecondsSinceLastUpdate = (now - viewer.dailyEarningData.lastUpdate) / 1000 / 3600 / 24;
+                viewer.dailyEarningData.totalDailyEarning += dailyIncome * millisecondsSinceLastUpdate;
+                viewer.dailyEarningData.lastUpdate = now;
+                document.getElementById('daily-earning-balance').textContent = viewer.dailyEarningData.totalDailyEarning.toFixed(2);
+                renderActivityChart();
+            }, 1);
+
+            renderActivityChart();
         }
 
         async function viewerCheckReferralStatus() {
@@ -1143,7 +1274,7 @@
             viewerRenderReferralTree();
             document.getElementById('referral-balance').textContent = viewer.referralData.income.total.toFixed(2);
             document.getElementById('viewer-downloadPdfBtn').style.display = 'inline';
-            renderActivityChart();
+            viewerCalculateDailyEarning();
         }
 
         function viewerRenderReferralTree() {
@@ -1240,6 +1371,12 @@
             doc.text(`Status: ${isComplete ? 'Complete' : 'Incomplete'}`, 10, y); y += 10;
             doc.text(`Direct Referrals: ${directReferralCount} / ${viewer.maxDirectReferrals}`, 10, y); y += 10;
             doc.text(`Total Referral Income: $${income.total.toFixed(2)}`, 10, y); y += 10;
+            if (viewer.dailyEarningData.totalDailyEarning > 0) {
+                doc.text(`Daily Earning: $${viewer.dailyEarningData.totalDailyEarning.toFixed(2)}`, 10, y); y += 10;
+                if (viewer.dailyEarningData.startDate) {
+                    doc.text(`Earning Start Date: ${viewer.dailyEarningData.startDate.toISOString().slice(0, 19).replace('T', ' ')}`, 10, y); y += 10;
+                }
+            }
 
             tree.forEach((levelUsers, level) => {
                 y += 10;
@@ -1291,8 +1428,8 @@
                 balance = viewer.referralData?.income.total || 0;
             } else if (type === 'staking') {
                 balance = minter.earningsData.totalROICoins * minter.emojiToUSDT || 0;
-            } else {
-                balance = currentUser?.stakeAmount * minter.emojiToInvestedUSDT || 0;
+            } else if (type === 'daily-earning') {
+                balance = viewer.dailyEarningData?.totalDailyEarning || 0;
             }
 
             if (amount > balance) {
